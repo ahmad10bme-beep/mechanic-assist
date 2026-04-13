@@ -1,29 +1,50 @@
 {
   "expo": {
-    "name": "mechanic-assist",
+    "name": "المساعد التقني - TVTC",
     "slug": "mechanic-assist",
     "version": "1.0.0",
+    "owner": "los21",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#050B18"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.los21.mechanicassist"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3089d17d-7e06-4f68-ae4f-28ca66e54388"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3089d17d-7e06-4f68-ae4f-28ca66e54388"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ]
   }
 }
