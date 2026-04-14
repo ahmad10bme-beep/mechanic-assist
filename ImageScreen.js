@@ -33,7 +33,7 @@ export default function ImageScreen({ onBack }) {
     setLoading(true);
     setGeneratedImage(null);
 
-    const prompt = `An automotive repair guide infographic for ${partName} in a ${carYear} ${carMake} ${carModel}. Shows: 1) Common problems and symptoms with checkmarks, 2) Step-by-step diagnostic flowchart with arrows, 3) Repair difficulty level indicator, 4) Estimated repair time and cost. Clean instructional layout, professional mechanic handbook style, numbered steps, warning symbols for safety. White background with blue and black text.`;
+    const prompt = `A clean automotive part illustration of a ${partName} for a ${carYear} ${carMake} ${carModel}, isolated on pure white background, no text, no labels, no diagrams, simple 3D render style, single part centered in frame, soft lighting, smooth shadows, automotive parts catalog photography style, professional product photo, photorealistic, high detail.`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
