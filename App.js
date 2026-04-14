@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -15,16 +16,20 @@ import {
 } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ImageScreen from './ImageScreen';
 
 const STORAGE_KEY = '@mechanic-assist:history:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
 const API_BASE_URL = 'https://mechanic-assist-server.onrender.com';
 
 export default function App() {
+  const scrollViewRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [showImageScreen, setShowImageScreen] = useState(false);
 
   useEffect(() => {
     async function prepare() {
@@ -45,6 +50,17 @@ export default function App() {
     prepare();
   }, []);
 
+  const clearChat = async () => {
+    setMessages([]);
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    setMenuVisible(false);
+  };
+
+  const newChat = () => {
+    setMessages([]);
+    setMenuVisible(false);
+  };
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -54,9 +70,8 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
-    // إنشاء "وحدة تحكم" لقطع الاتصال إذا طال الانتظار جداً (دقيقتين للسيرفر المجاني)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); 
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       const res = await fetch(`${API_BASE_URL}/chat`, {
@@ -77,7 +92,6 @@ export default function App() {
     } catch (e) {
       clearTimeout(timeoutId);
       console.error(e);
-      // تنبيه مخصص لحالة السيرفر "النايم"
       Alert.alert(
         'جاري تجهيز الخبير', 
         'خبير الميكانيكا في طريقه إليك! السيرفر يستغرق حوالي 30 ثانية للعمل في أول مرة. يرجى المحاولة مرة أخرى الآن.'
@@ -89,24 +103,50 @@ export default function App() {
 
   if (!isInitialized) return null;
 
+  if (showImageScreen) {
+    return <ImageScreen onBack={() => setShowImageScreen(false)} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>المساعد التقني</Text>
-        <Text style={styles.headerSubtitle}>للمبتكر أحمد الزهراني</Text>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)} style={styles.menuButton}>
+            <Text style={styles.menuIcon}>⋮</Text>
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>المساعد التقني</Text>
+            <Text style={styles.headerSubtitle}>للمبتكر أحمد الزهراني</Text>
+          </View>
+          <View style={{ width: 36 }} />
+        </View>
+        {menuVisible && (
+          <View style={styles.menuDropdown}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowImageScreen(true); setMenuVisible(false); }}>
+              <Text style={styles.menuItemText}>توليد صور قطع</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={newChat}>
+              <Text style={styles.menuItemText}>محادثة جديدة</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={clearChat}>
+              <Text style={styles.menuItemText}>مسح المحادثة</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
           style={styles.messagesList} 
           contentContainerStyle={{ paddingBottom: 20 }}
-          ref={(ref) => { this.scrollView = ref; }}
-          onContentSizeChange={() => this.scrollView.scrollToEnd({ animated: true })}
+          ref={scrollViewRef}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
           {messages.map((m, i) => (
             <View key={i} style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={styles.bubbleText}>{m.text}</Text>
+              {m.ts ? <Text style={styles.bubbleTime}>{new Date(m.ts).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</Text> : null}
             </View>
           ))}
           {loading && (
@@ -137,14 +177,22 @@ export default function App() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#121212' },
-  header: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#333', alignItems: 'center' },
+  header: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#333' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerCenter: { alignItems: 'center', flex: 1 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
   headerSubtitle: { color: '#007AFF', fontSize: 12, marginTop: 4 },
+  menuButton: { padding: 8 },
+  menuIcon: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+  menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 160, zIndex: 10, elevation: 5 },
+  menuItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#444' },
+  menuItemText: { color: '#fff', fontSize: 15, textAlign: 'right' },
   messagesList: { flex: 1, padding: 15 },
   bubble: { padding: 12, borderRadius: 15, marginBottom: 10, maxWidth: '85%' },
   bubbleUser: { alignSelf: 'flex-end', backgroundColor: '#0B5FFF' },
   bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333' },
   bubbleText: { color: '#fff', textAlign: 'right', lineHeight: 22 },
+  bubbleTime: { color: '#888', fontSize: 10, textAlign: 'right', marginTop: 4 },
   footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#333', backgroundColor: '#121212' },
   chatInput: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 45, textAlign: 'right' },
   sendButton: { backgroundColor: '#007AFF', marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
