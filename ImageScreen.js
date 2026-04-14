@@ -64,6 +64,7 @@ export default function ImageScreen({ onBack }) {
       console.log('Response data:', data);
 
       if (res.ok) {
+        console.log('Image URL received:', data.imageUrl);
         setGeneratedImage(data.imageUrl);
       } else {
         throw new Error(data.error || 'خطأ في توليد الصورة');
@@ -202,8 +203,8 @@ const styles = StyleSheet.create({
   },
   buttonIcon: { fontSize: 20, marginLeft: 8 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  imageContainer: { alignItems: 'center' },
-  generatedImage: { width: '100%', height: 300, borderRadius: 10, marginBottom: 15 },
+  imageContainer: { width: '100%', alignItems: 'center' },
+  generatedImage: { width: '100%', height: 300, borderRadius: 10, marginBottom: 15, backgroundColor: '#1E1E1E' },
   saveButton: {
     backgroundColor: '#28A745',
     borderRadius: 25,
