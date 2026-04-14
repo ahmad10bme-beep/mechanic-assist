@@ -44,11 +44,14 @@ app.post('/image', async (req, res) => {
   console.log('Received /image request:', req.body);
   try {
     const { prompt } = req.body;
-    console.log('Prompt:', prompt);
+    console.log('Original prompt:', prompt);
+
+    const styledPrompt = `A highly precise, detailed technical schematic line drawing illustration of ${prompt}, black and white line art style, with intricate stippling and cross-hatching shading, on a plain white background, clear engineering illustration style, no text, no labels, no color, pure technical drafting aesthetic.`;
+    console.log('Styled prompt:', styledPrompt);
 
     const response = await openai.images.generate({
       model: "dall-e-2",
-      prompt: prompt,
+      prompt: styledPrompt,
       n: 1,
       size: "512x512",
     });

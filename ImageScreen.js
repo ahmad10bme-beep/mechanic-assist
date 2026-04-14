@@ -33,7 +33,7 @@ export default function ImageScreen({ onBack }) {
     setLoading(true);
     setGeneratedImage(null);
 
-    const prompt = `A clean automotive part illustration of a ${partName} for a ${carYear} ${carMake} ${carModel}, isolated on pure white background, no text, no labels, no diagrams, simple 3D render style, single part centered in frame, soft lighting, smooth shadows, automotive parts catalog photography style, professional product photo, photorealistic, high detail.`;
+    const prompt = `a ${partName} for a ${carYear} ${carMake} ${carModel} car`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
