@@ -37,16 +37,27 @@ app.post('/chat', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "خطأ في الاتصال" });
   }
-});
+});function correctSpelling(text) {
+  let corrected = text;
+  
+  // تصحيح أخطاء شائعة
+  corrected = corrected.replace(/تايوتا|تويتا/g, 'تويوتا');
+  corrected = corrected.replace(/أكورد|اكورد/g, 'Honda Accord');
+  
+  return corrected;
+}
 
 app.post('/image', async (req, res) => {
   console.log('=== /image endpoint hit ===');
   console.log('Received /image request:', req.body);
   try {
-    const { prompt } = req.body;
-    console.log('Original prompt:', prompt);
+ const { prompt } = req.body;
+console.log('Original prompt:', prompt);
 
-const styledPrompt = `A extremely detailed, totally isolated technical schematic line drawing illustration of ${prompt}, showing ONLY the specific part and its internal mechanics, black and white line art style, intricate stippling and cross-hatching shading, identical in style to image_6.png, on a plain, pure white background. CRITICAL: Do NOT show the complete car, car body, wheels, windows, or any other unrelated vehicle parts. Focus solely on the isolated ${prompt}.`;
+const correctedPrompt = correctSpelling(prompt);
+console.log('Corrected prompt:', correctedPrompt);
+
+const styledPrompt = `Correct any spelling mistakes in the car make, model, or part name before generating the image. A extremely detailed, totally isolated technical schematic line drawing illustration of ${correctedPrompt}, showing ONLY the specific part and its internal mechanics, black and white line art style, intricate stippling and cross-hatching shading, identical in style to image_6.png, on a plain, pure white background. CRITICAL: Do NOT show the complete car, car body, wheels, windows, or any other unrelated vehicle parts. Focus solely on the isolated ${correctedPrompt}.`;
     const response = await openai.images.generate({
       model: "dall-e-2",
       prompt: styledPrompt,
