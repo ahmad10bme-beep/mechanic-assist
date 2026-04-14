@@ -20,7 +20,7 @@ import ImageScreen from './ImageScreen';
 
 const STORAGE_KEY = '@mechanic-assist:history:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
-const API_BASE_URL = 'https://mechanic-assist-server.onrender.com';
+const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
 export default function App() {
   const scrollViewRef = useRef(null);
@@ -143,6 +143,17 @@ export default function App() {
           ref={scrollViewRef}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
+          {messages.length === 0 && !loading && (
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeTitle}>👋 أهلاً بك في مساعد الميكانيكي!</Text>
+              <Text style={styles.welcomeText}>
+                أنا هنا لأساعدك في مشاكل سيارتك وتوفير معلومات مفيدة عن قطع الغيار.
+              </Text>
+              <Text style={styles.welcomeTip}>
+                💡 تلميح: اضغط على النقاط الثلاث (⋮) في الأعلى لتوليد صور قطع الغيار
+              </Text>
+            </View>
+          )}
           {messages.map((m, i) => (
             <View key={i} style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={styles.bubbleText}>{m.text}</Text>
@@ -177,6 +188,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#121212' },
+  welcomeContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', marginTop: 50 },
+  welcomeTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  welcomeText: { color: '#aaa', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
+  welcomeTip: { color: '#FFD700', fontSize: 14, textAlign: 'center', backgroundColor: '#2A2A2A', padding: 12, borderRadius: 10, overflow: 'hidden' },
   header: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#333' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerCenter: { alignItems: 'center', flex: 1 },

@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-const API_BASE_URL = 'https://mechanic-assist-server.onrender.com';
+const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
 export default function ImageScreen({ onBack }) {
   const [carMake, setCarMake] = useState('');
