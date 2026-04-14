@@ -33,7 +33,7 @@ export default function ImageScreen({ onBack }) {
     setLoading(true);
     setGeneratedImage(null);
 
-    const prompt = `قطعة غيار سيارة: ${partName}، لسيارة ${carMake} ${carModel} موديل ${carYear}. رسم تقني مفصل للقطعة.`;
+    const prompt = `A detailed technical engineering illustration of a ${partName} for a ${carYear} ${carMake} ${carModel} car. Blueprint style, white background, precise mechanical drawing with labels and dimensions, automotive spare part diagram, professional technical manual illustration.`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
