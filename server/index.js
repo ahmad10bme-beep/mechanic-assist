@@ -40,6 +40,7 @@ app.post('/chat', async (req, res) => {
 });
 
 app.post('/image', async (req, res) => {
+  console.log('=== /image endpoint hit ===');
   console.log('Received /image request:', req.body);
   try {
     const { prompt } = req.body;
