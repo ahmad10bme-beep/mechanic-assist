@@ -46,8 +46,7 @@ app.post('/image', async (req, res) => {
     const { prompt } = req.body;
     console.log('Original prompt:', prompt);
 
-    const styledPrompt = `A highly precise, detailed technical schematic line drawing illustration of ${prompt}, black and white line art style, with intricate stippling and cross-hatching shading, on a plain white background, clear engineering illustration style, no text, no labels, no color, pure technical drafting aesthetic.`;
-    console.log('Styled prompt:', styledPrompt);
+const styledPrompt = `A extremely detailed, isolated, technical schematic line drawing illustration of ${prompt}, black and white line art style, identical in style to image_6.png (intricate stippling and cross-hatching shading). IMPORTANT: Focus ONLY on the ${prompt.split('for')[0].trim()}. DO NOT show the body, wheels, windows, or any other part of the car except the ${prompt.split('for')[0].trim()} itself. The ${prompt.split('for')[0].trim()} should be centered and completely isolated on a plain white engineering background.`;    console.log('Styled prompt:', styledPrompt);
 
     const response = await openai.images.generate({
       model: "dall-e-2",
