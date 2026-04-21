@@ -282,21 +282,21 @@ export default function App() {
             <Text style={styles.colorSectionTitle}>🖼️ خلفية التطبيق</Text>
             <View style={styles.themeOptions}>
               {[
-                { key: 'dark', name: '🌑 داكن', color: '#121212' },
-                { key: 'midnight', name: '🌌 ليلي', color: '#0a0a1a' },
-                { key: 'ocean', name: '🌊 محيطي', color: '#001a33' },
-                { key: 'forest', name: '🌲 غابي', color: '#0a1f0a' },
-                { key: 'royal', name: '👑 ملكي', color: '#1a0a33' },
-                { key: 'sunset', name: '🌅 غروب', color: '#2a1a1a' },
-                { key: 'space', name: '🚀 فضائي', color: '#000000' },
-                { key: 'charcoal', name: '🎱 فحمي', color: '#1a1a2e' },
+                { key: 'dark', name: '🌑 داكن', colors: ['#121212', '#1a1a2e', '#16213e'] },
+                { key: 'midnight', name: '🌌 ليلي', colors: ['#0a0a1a', '#1a1a3a', '#2d1b69'] },
+                { key: 'ocean', name: '🌊 محيطي', colors: ['#001a33', '#003d5c', '#006680'] },
+                { key: 'forest', name: '🌲 غابي', colors: ['#0a1f0a', '#1a3a1a', '#2d5a27'] },
+                { key: 'royal', name: '👑 ملكي', colors: ['#1a0a33', '#3d1a5c', '#5c2d91'] },
+                { key: 'sunset', name: '🌅 غروب', colors: ['#2a1a1a', '#4a2a3a', '#8b4a5c'] },
+                { key: 'space', name: '🚀 فضائي', colors: ['#000000', '#1a0a2e', '#2d1b4e'] },
+                { key: 'charcoal', name: '🎱 فحمي', colors: ['#1a1a2e', '#2d2d44', '#3d3d5c'] },
               ].map(theme => (
                 <TouchableOpacity
                   key={theme.key}
                   style={[styles.themeOption, backgroundTheme === theme.key && styles.selectedTheme]}
                   onPress={() => changeBackgroundTheme(theme.key)}
                 >
-                  <View style={[styles.themeColorPreview, { backgroundColor: theme.color }]} />
+                  <LinearGradient colors={theme.colors} style={styles.themeGradientPreview} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
                   <Text style={styles.themeName}>{theme.name}</Text>
                 </TouchableOpacity>
               ))}
@@ -397,7 +397,7 @@ export default function App() {
 }
 
 const getStyles = (themeColor) => StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#121212' },
+  safeArea: { flex: 1, backgroundColor: 'transparent' },
   welcomeContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', marginTop: 50 },
   welcomeTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
   welcomeText: { color: '#aaa', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
@@ -412,14 +412,14 @@ const getStyles = (themeColor) => StyleSheet.create({
   menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 200, zIndex: 10, elevation: 5 },
   menuItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#444' },
   menuItemText: { color: '#fff', fontSize: 15, textAlign: 'right' },
-  messagesList: { flex: 1, padding: 15 },
+  messagesList: { flex: 1, padding: 15, backgroundColor: 'transparent' },
   bubble: { padding: 12, borderRadius: 15, marginBottom: 10, maxWidth: '85%' },
   bubbleUser: { alignSelf: 'flex-end', backgroundColor: themeColor },
-  bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333' },
+  bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: 'rgba(30,30,30,0.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   bubbleText: { color: '#fff', textAlign: 'right', lineHeight: 22 },
   bubbleTime: { color: '#888', fontSize: 10, textAlign: 'right', marginTop: 4 },
   copyHint: { color: '#666', fontSize: 9, textAlign: 'center', marginTop: 6, opacity: 0.7 },
-  footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#333', backgroundColor: '#121212' },
+  footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', backgroundColor: 'transparent' },
   chatInput: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 45, textAlign: 'right' },
   sendButton: { backgroundColor: themeColor, marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
@@ -456,7 +456,7 @@ const getStyles = (themeColor) => StyleSheet.create({
   themeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 10, borderRadius: 10, margin: 5, minWidth: 100 },
   selectedTheme: { borderWidth: 2, borderColor: themeColor },
   gradientBackground: { flex: 1 },
-  themeColorPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
+  themeGradientPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
