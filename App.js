@@ -50,6 +50,19 @@ export default function App() {
   const [fontSize, setFontSize] = useState('normal'); // 'small', 'normal', 'large'
   const [soundEnabled, setSoundEnabled] = useState(false);
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const [emojiAnim] = useState(new Animated.Value(0));
+
+  // Background themes with gradients and floating emojis
+  const BACKGROUND_THEMES = {
+    dark: { colors: ['#121212', '#1a1a2e', '#16213e'], emojis: ['✨', '⭐', '🌟', '💫'], emojiColors: ['#FFD700', '#FFA500', '#FFEC8B', '#FFF8DC'] },
+    midnight: { colors: ['#0a0a1a', '#1a1a3a', '#2d1b69'], emojis: ['🌙', '✨', '🦊', '🔮', '🌟'], emojiColors: ['#FFD700', '#FF6347', '#FF8C00', '#9370DB', '#FFF'] },
+    ocean: { colors: ['#001a33', '#003d5c', '#006680'], emojis: ['🌊', '🐠', '💙', '🐟', '🌊', '✨'], emojiColors: ['#00BFFF', '#FFD700', '#87CEEB', '#4682B4', '#5F9EA0', '#ADD8E6'] },
+    forest: { colors: ['#0a1f0a', '#1a3a1a', '#2d5a27'], emojis: ['🌿', '🦊', '🍃', '🌲', '🦋', '🌸'], emojiColors: ['#32CD32', '#FF8C00', '#228B22', '#006400', '#FF69B4', '#90EE90'] },
+    royal: { colors: ['#1a0a33', '#3d1a5c', '#5c2d91'], emojis: ['👑', '💜', '✨', '💎', '🔮', '⭐'], emojiColors: ['#FFD700', '#9370DB', '#FFA500', '#E0FFFF', '#DDA0DD', '#FFF'] },
+    sunset: { colors: ['#2a1a1a', '#4a2a3a', '#8b4a5c'], emojis: ['🌅', '💖', '🦊', '🧡', '💛', '🌸'], emojiColors: ['#FF6347', '#FFD700', '#FF8C00', '#FFA07A', '#FFEC8B', '#FFB6C1'] },
+    space: { colors: ['#000000', '#1a0a2e', '#2d1b4e'], emojis: ['🚀', '🌟', '👽', '🛸', '🔭', '🪐', '✨'], emojiColors: ['#FFD700', '#00BFFF', '#32CD32', '#FF69B4', '#C0C0C0', '#FFA500', '#FFF'] },
+    charcoal: { colors: ['#1a1a2e', '#2d2d44', '#3d3d5c'], emojis: ['🔧', '⚙️', '🔩', '🛠️', '⚡', '💡'], emojiColors: ['#C0C0C0', '#A9A9A9', '#D3D3D3', '#696969', '#FFD700', '#FFF'] },
+  };
 
   useEffect(() => {
     async function prepare() {
@@ -94,6 +107,15 @@ export default function App() {
       ).start();
     }
   }, [newMessageIndex]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(emojiAnim, { toValue: 1, duration: 4000, useNativeDriver: true }),
+        Animated.timing(emojiAnim, { toValue: 0, duration: 4000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
   const clearChat = async () => {
     setMessages([]);
@@ -148,18 +170,48 @@ export default function App() {
     await AsyncStorage.setItem(SOUND_ENABLED_KEY, String(!soundEnabled));
   };
 
+  const getCurrentTheme = () => BACKGROUND_THEMES[backgroundTheme] || BACKGROUND_THEMES.dark;
+
   const getGradientColors = () => {
-    const themes = {
-      dark: ['#121212', '#1a1a2e', '#16213e'],
-      midnight: ['#0a0a1a', '#1a1a3a', '#2d1b69'],
-      ocean: ['#001a33', '#003d5c', '#006680'],
-      forest: ['#0a1f0a', '#1a3a1a', '#2d5a27'],
-      royal: ['#1a0a33', '#3d1a5c', '#5c2d91'],
-      sunset: ['#2a1a1a', '#4a2a3a', '#8b4a5c'],
-      space: ['#000000', '#1a0a2e', '#2d1b4e'],
-      charcoal: ['#1a1a2e', '#2d2d44', '#3d3d5c'],
-    };
-    return themes[backgroundTheme] || themes.dark;
+    return getCurrentTheme().colors;
+  };
+
+  const renderFloatingEmojis = () => {
+    const theme = getCurrentTheme();
+    return theme.emojis.map((emoji, index) => (
+      <Animated.Text
+        key={index}
+        style={[
+          styles.floatingEmoji,
+          {
+            color: theme.emojiColors[index % theme.emojiColors.length],
+            left: 10 + (index * 60) % 350,
+            top: 80 + (index * 50) % 500,
+            fontSize: 20 + (index % 3) * 8,
+            transform: [
+              {
+                translateY: emojiAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -25 + (index * 8)]
+                })
+              },
+              {
+                rotate: emojiAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', `${5 + (index * 8)}deg`]
+                })
+              }
+            ],
+            opacity: emojiAnim.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.3, 0.7, 0.3]
+            })
+          }
+        ]}
+      >
+        {emoji}
+      </Animated.Text>
+    ));
   };
 
   const newChat = () => {
@@ -245,6 +297,7 @@ export default function App() {
 
   return (
     <LinearGradient colors={getGradientColors()} style={styles.gradientBackground} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      {renderFloatingEmojis()}
       <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.header}>
@@ -613,6 +666,13 @@ const getStyles = (themeColor, fontSize = 'normal') => {
   newMessageGlow: { shadowColor: '#fff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10, elevation: 10 },
   themeGradientPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
-  infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  floatingEmoji: { 
+    position: 'absolute', 
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 0,
+  }
   });
 };
