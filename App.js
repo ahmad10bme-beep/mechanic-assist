@@ -178,40 +178,58 @@ export default function App() {
 
   const renderFloatingEmojis = () => {
     const theme = getCurrentTheme();
-    return theme.emojis.map((emoji, index) => (
-      <Animated.Text
-        key={index}
-        style={[
-          styles.floatingEmoji,
-          {
-            color: theme.emojiColors[index % theme.emojiColors.length],
-            left: 10 + (index * 60) % 350,
-            top: 80 + (index * 50) % 500,
-            fontSize: 20 + (index % 3) * 8,
-            transform: [
-              {
-                translateY: emojiAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, -25 + (index * 8)]
-                })
-              },
-              {
-                rotate: emojiAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0deg', `${5 + (index * 8)}deg`]
-                })
-              }
-            ],
-            opacity: emojiAnim.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: [0.3, 0.7, 0.3]
-            })
-          }
-        ]}
-      >
-        {emoji}
-      </Animated.Text>
-    ));
+    // Random positions scattered around the screen
+    const randomPositions = [
+      { left: 5, top: 100 }, { left: 280, top: 150 }, { left: 150, top: 80 },
+      { left: 60, top: 300 }, { left: 300, top: 400 }, { left: 20, top: 500 },
+      { left: 250, top: 600 }, { left: 100, top: 200 }, { left: 320, top: 250 },
+      { left: 40, top: 450 }, { left: 200, top: 350 }, { left: 120, top: 550 },
+      { left: 290, top: 120 }, { left: 15, top: 650 }, { left: 180, top: 180 },
+      { left: 330, top: 500 }, { left: 70, top: 380 }, { left: 260, top: 280 },
+    ];
+    return theme.emojis.map((emoji, index) => {
+      const pos = randomPositions[index % randomPositions.length];
+      return (
+        <Animated.Text
+          key={index}
+          style={[
+            styles.floatingEmoji,
+            {
+              color: theme.emojiColors[index % theme.emojiColors.length],
+              left: pos.left,
+              top: pos.top,
+              fontSize: 28 + (index % 4) * 12, // 28-64px (much bigger!)
+              transform: [
+                {
+                  translateY: emojiAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -40 + (index * 15)]
+                  })
+                },
+                {
+                  translateX: emojiAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0, (index % 2 === 0 ? 20 : -20), 0]
+                  })
+                },
+                {
+                  rotate: emojiAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', `${(index % 2 === 0 ? 1 : -1) * (10 + (index * 5))}deg`]
+                  })
+                }
+              ],
+              opacity: emojiAnim.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.2, 0.9, 0.2]
+              })
+            }
+          ]}
+        >
+          {emoji}
+        </Animated.Text>
+      );
+    });
   };
 
   const newChat = () => {
