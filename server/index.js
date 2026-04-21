@@ -2,6 +2,7 @@ require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const cors = require('cors');
 const { OpenAI } = require('openai');
+const fetch = require('node-fetch');
 
 const app = express();
 
@@ -37,7 +38,9 @@ app.post('/chat', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "خطأ في الاتصال" });
   }
-});function correctSpelling(text) {
+});
+
+function correctSpelling(text) {
   let corrected = text;
   
   // تصحيح أخطاء شائعة
@@ -47,25 +50,94 @@ app.post('/chat', async (req, res) => {
   return corrected;
 }
 
+// Search Wikimedia Commons for REAL car part images (FREE - no API key needed!)
+async function searchRealImage(query) {
+  try {
+    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' car part')}&srnamespace=6&srlimit=5&format=json&origin=*`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+    
+    if (!searchData.query?.search?.length) return null;
+    
+    // Try each result until we find one with a valid image
+    for (const result of searchData.query.search) {
+      const title = result.title;
+      const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=800&format=json&origin=*`;
+      const infoRes = await fetch(imageInfoUrl);
+      const infoData = await infoRes.json();
+      const pages = infoData.query?.pages;
+      if (!pages) continue;
+      
+      const page = Object.values(pages)[0];
+      if (page.imageinfo?.[0]?.thumburl) {
+        return {
+          url: page.imageinfo[0].thumburl,
+          source: 'real',
+          title: title
+        };
+      }
+    }
+    return null;
+  } catch (e) {
+    console.log('Real image search failed:', e.message);
+    return null;
+  }
+}
+
 app.post('/image', async (req, res) => {
   console.log('=== /image endpoint hit ===');
   console.log('Received /image request:', req.body);
   try {
- const { prompt } = req.body;
-console.log('Original prompt:', prompt);
+    const { prompt, carMake, carModel, carYear, partName } = req.body;
+    console.log('Original prompt:', prompt);
 
-const correctedPrompt = correctSpelling(prompt);
-console.log('Corrected prompt:', correctedPrompt);
+    const correctedPrompt = correctSpelling(prompt);
+    console.log('Corrected prompt:', correctedPrompt);
 
-const styledPrompt = `Correct any spelling mistakes in the car make, model, or part name before generating the image. A extremely detailed, totally isolated technical schematic line drawing illustration of ${correctedPrompt}, showing ONLY the specific part and its internal mechanics, black and white line art style, intricate stippling and cross-hatching shading, identical in style to image_6.png, on a plain, pure white background. CRITICAL: Do NOT show the complete car, car body, wheels, windows, or any other unrelated vehicle parts. Focus solely on the isolated ${correctedPrompt}.`;
+    // STEP 1: Try to find a REAL image from Wikimedia Commons (FREE!)
+    const searchTerms = [
+      `${carMake || ''} ${carModel || ''} ${partName || ''}`.trim(),
+      `${partName || ''} car ${carMake || ''}`.trim(),
+      `${partName || ''} automotive`.trim(),
+      correctedPrompt
+    ];
+    
+    let realImage = null;
+    for (const term of searchTerms) {
+      if (term.length < 3) continue;
+      realImage = await searchRealImage(term);
+      if (realImage) {
+        console.log('Found REAL image:', realImage.url);
+        break;
+      }
+    }
+
+    if (realImage) {
+      return res.json({ 
+        imageUrl: realImage.url, 
+        source: 'real',
+        title: realImage.title
+      });
+    }
+
+    // STEP 2: Fallback to DALL-E 3 (much better than DALL-E 2!)
+    console.log('No real image found, using DALL-E 3...');
+    
+    const styledPrompt = `A highly detailed, photorealistic image of ${correctedPrompt}, showing the exact specific car part clearly and accurately. The image should look like a professional auto parts catalog photograph. Clean background, proper lighting, all details visible and anatomically correct. No text, no labels, no watermarks.`;
+    
     const response = await openai.images.generate({
-      model: "dall-e-2",
+      model: "dall-e-3",
       prompt: styledPrompt,
       n: 1,
-      size: "512x512",
+      size: "1024x1024",
+      quality: "standard",
     });
-    console.log('Image generated successfully');
-    res.json({ imageUrl: response.data[0].url });
+    
+    console.log('DALL-E 3 image generated successfully');
+    res.json({ 
+      imageUrl: response.data[0].url,
+      source: 'ai'
+    });
   } catch (error) {
     console.error('Image generation error:', error.message);
     console.error('Full error:', error);

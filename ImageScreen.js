@@ -22,6 +22,7 @@ export default function ImageScreen({ onBack }) {
   const [carYear, setCarYear] = useState('');
   const [partName, setPartName] = useState('');
   const [generatedImage, setGeneratedImage] = useState(null);
+  const [imageSource, setImageSource] = useState(null); // 'real' or 'ai'
   const [loading, setLoading] = useState(false);
 
   const generateImage = async () => {
@@ -32,6 +33,7 @@ export default function ImageScreen({ onBack }) {
 
     setLoading(true);
     setGeneratedImage(null);
+    setImageSource(null);
 
     const prompt = `a ${partName} for a ${carYear} ${carMake} ${carModel} car`;
 
@@ -40,12 +42,12 @@ export default function ImageScreen({ onBack }) {
 
     try {
       console.log('Sending request to:', `${API_BASE_URL}/image`);
-      console.log('Request body:', { prompt });
+      console.log('Request body:', { prompt, carMake, carModel, carYear, partName });
 
       const res = await fetch(`${API_BASE_URL}/image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, carMake, carModel, carYear, partName }),
         signal: controller.signal,
       });
 
@@ -64,8 +66,9 @@ export default function ImageScreen({ onBack }) {
       console.log('Response data:', data);
 
       if (res.ok) {
-        console.log('Image URL received:', data.imageUrl);
+        console.log('Image URL received:', data.imageUrl, 'Source:', data.source);
         setGeneratedImage(data.imageUrl);
+        setImageSource(data.source || 'ai');
       } else {
         throw new Error(data.error || 'خطأ في توليد الصورة');
       }
@@ -153,6 +156,13 @@ export default function ImageScreen({ onBack }) {
 
           {generatedImage ? (
             <View style={styles.imageContainer}>
+              {imageSource && (
+                <View style={[styles.sourceBadge, imageSource === 'real' ? styles.realBadge : styles.aiBadge]}>
+                  <Text style={styles.sourceBadgeText}>
+                    {imageSource === 'real' ? '📸 صورة حقيقية' : '🎨 صورة AI'}
+                  </Text>
+                </View>
+              )}
               <Image source={{ uri: generatedImage }} style={styles.generatedImage} resizeMode="contain" />
               <TouchableOpacity style={styles.saveButton} onPress={saveToGallery}>
                 <Text style={styles.saveIcon}>✓</Text>
@@ -227,4 +237,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: { color: '#666', fontSize: 16 },
+  sourceBadge: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 15, 
+    marginBottom: 10,
+    alignSelf: 'flex-start'
+  },
+  realBadge: { backgroundColor: '#28A745' },
+  aiBadge: { backgroundColor: '#FF9500' },
+  sourceBadgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
 });
