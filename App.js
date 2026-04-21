@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ImageScreen from './ImageScreen';
@@ -113,16 +114,16 @@ export default function App() {
     await AsyncStorage.setItem(BACKGROUND_THEME_KEY, theme);
   };
 
-  const getBackgroundStyle = () => {
+  const getGradientColors = () => {
     const themes = {
-      dark: { backgroundColor: '#121212' },
-      midnight: { backgroundColor: '#0a0a1a' },
-      ocean: { backgroundColor: '#001a33' },
-      forest: { backgroundColor: '#0a1f0a' },
-      royal: { backgroundColor: '#1a0a33' },
-      sunset: { backgroundColor: '#2a1a1a' },
-      space: { backgroundColor: '#000000' },
-      charcoal: { backgroundColor: '#1a1a2e' },
+      dark: ['#121212', '#1a1a2e', '#16213e'],
+      midnight: ['#0a0a1a', '#1a1a3a', '#2d1b69'],
+      ocean: ['#001a33', '#003d5c', '#006680'],
+      forest: ['#0a1f0a', '#1a3a1a', '#2d5a27'],
+      royal: ['#1a0a33', '#3d1a5c', '#5c2d91'],
+      sunset: ['#2a1a1a', '#4a2a3a', '#8b4a5c'],
+      space: ['#000000', '#1a0a2e', '#2d1b4e'],
+      charcoal: ['#1a1a2e', '#2d2d44', '#3d3d5c'],
     };
     return themes[backgroundTheme] || themes.dark;
   };
@@ -191,7 +192,8 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, getBackgroundStyle()]}>
+    <LinearGradient colors={getGradientColors()} style={styles.gradientBackground} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -390,6 +392,7 @@ export default function App() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -452,6 +455,7 @@ const getStyles = (themeColor) => StyleSheet.create({
   themeOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginVertical: 10 },
   themeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 10, borderRadius: 10, margin: 5, minWidth: 100 },
   selectedTheme: { borderWidth: 2, borderColor: themeColor },
+  gradientBackground: { flex: 1 },
   themeColorPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
