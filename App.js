@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -17,6 +18,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ImageScreen from './ImageScreen';
+import * as Sharing from 'expo-sharing';
 
 const STORAGE_KEY = '@mechanic-assist:history:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
@@ -30,6 +32,7 @@ export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [showImageScreen, setShowImageScreen] = useState(false);
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
 
   useEffect(() => {
     async function prepare() {
@@ -101,6 +104,11 @@ export default function App() {
     }
   };
 
+  const shareChat = async () => {
+    const text = messages.map(m => `${m.role === 'user' ? 'أنت' : 'المساعد'}: ${m.text}`).join('\n');
+    await Sharing.shareAsync(text);
+  };
+
   if (!isInitialized) return null;
 
   if (showImageScreen) {
@@ -113,28 +121,63 @@ export default function App() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)} style={styles.menuButton}>
-            <Text style={styles.menuIcon}>⋮</Text>
+            <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>المساعد التقني</Text>
             <Text style={styles.headerSubtitle}>للمبتكر أحمد الزهراني</Text>
           </View>
-          <View style={{ width: 36 }} />
+          <TouchableOpacity onPress={() => setInfoModalVisible(true)} style={styles.infoButton}>
+            <Text style={styles.infoIcon}>❗</Text>
+          </TouchableOpacity>
         </View>
         {menuVisible && (
           <View style={styles.menuDropdown}>
             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowImageScreen(true); setMenuVisible(false); }}>
-              <Text style={styles.menuItemText}>توليد صور قطع</Text>
+              <Text style={styles.menuItemText}>🎨 مرسم القطع</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={newChat}>
-              <Text style={styles.menuItemText}>محادثة جديدة</Text>
+              <Text style={styles.menuItemText}>📝 محادثة جديدة</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={clearChat}>
-              <Text style={styles.menuItemText}>مسح المحادثة</Text>
+              <Text style={styles.menuItemText}>🗑️ مسح المحادثة</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { shareChat(); setMenuVisible(false); }}>
+              <Text style={styles.menuItemText}>📤 مشاركة المحادثة</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
+
+      <Modal visible={infoModalVisible} transparent={true} animationType="slide" onRequestClose={() => setInfoModalVisible(false)}>
+        <View style={styles.infoModalOverlay}>
+          <View style={styles.infoModalContent}>
+            <Text style={styles.infoModalTitle}>ℹ️ عن المشروع</Text>
+            <ScrollView style={styles.infoModalScroll}>
+              <Text style={styles.infoModalSection}>🎯 نبذة عن المشروع</Text>
+              <Text style={styles.infoModalText}>
+                تطبيق مساعد الميكانيكي هو نظام ذكي يستخدم الذكاء الاصطناعي لمساعدة ملاك السيارات في تشخيص مشاكل المركبات وتوفير حلول تقنية مفصلة مع رسومات توضيحية دقيقة لقطع الغيار.
+              </Text>
+              
+              <Text style={styles.infoModalSection}>🔧 التخصصات</Text>
+              <Text style={styles.infoModalText}>• ميكانيكا السيارات</Text>
+              <Text style={styles.infoModalText}>• الكهرباء والإلكترونيات</Text>
+              <Text style={styles.infoModalText}>• الحاسب والبرمجة</Text>
+              <Text style={styles.infoModalText}>• التبريد والتكييف</Text>
+              
+              <Text style={styles.infoModalSection}>👨‍🎓 المتدربون</Text>
+              <Text style={styles.infoModalText}>• أحمد الزهراني - المطور الرئيسي</Text>
+              <Text style={styles.infoModalText}>• معتز القرني - المتدرب المساعد</Text>
+              
+              <Text style={styles.infoModalSection}>👨‍🏫 المشرف</Text>
+              <Text style={styles.infoModalText}>• المهندس فيصل الطلحي</Text>
+            </ScrollView>
+            <TouchableOpacity onPress={() => setInfoModalVisible(false)} style={styles.infoModalButton}>
+              <Text style={styles.infoModalButtonText}>✓ فهمت</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
@@ -150,7 +193,7 @@ export default function App() {
                 أنا هنا لأساعدك في مشاكل سيارتك وتوفير معلومات مفيدة عن قطع الغيار.
               </Text>
               <Text style={styles.welcomeTip}>
-                💡 تلميح: اضغط على النقاط الثلاث (⋮) في الأعلى لتوليد صور قطع الغيار
+                💡 تلميح: اضغط على القائمة (☰) في الأعلى لتوليد صور قطع الغيار
               </Text>
             </View>
           )}
@@ -213,5 +256,15 @@ const styles = StyleSheet.create({
   sendButton: { backgroundColor: '#007AFF', marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', padding: 10 },
-  loadingText: { color: '#888', marginLeft: 10, fontSize: 12 }
+  loadingText: { color: '#888', marginLeft: 10, fontSize: 12 },
+  infoButton: { padding: 8 },
+  infoIcon: { color: '#FFD700', fontSize: 24 },
+  infoModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  infoModalContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: '#333' },
+  infoModalTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  infoModalScroll: { maxHeight: 400 },
+  infoModalSection: { color: '#007AFF', fontSize: 16, fontWeight: 'bold', marginTop: 15, marginBottom: 5, textAlign: 'right' },
+  infoModalText: { color: '#ccc', fontSize: 14, lineHeight: 22, textAlign: 'right', marginBottom: 5 },
+  infoModalButton: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25, marginTop: 20, alignSelf: 'center' },
+  infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
