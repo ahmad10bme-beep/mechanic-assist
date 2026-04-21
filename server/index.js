@@ -133,7 +133,7 @@ app.post('/image', async (req, res) => {
     // STEP 2: Fallback to DALL-E 3 (much better than DALL-E 2!)
     console.log('No real image found, using DALL-E 3...');
     
-    const styledPrompt = `Professional automotive parts catalog photograph of ${correctedPrompt}. Shot from a clear angle showing the complete part with all mounting points, connectors, and surface details clearly visible. The part is centered on a clean neutral gray background with soft even studio lighting. Ultra-sharp focus, no shadows obscuring details, no text, no labels, no watermarks, no hands, no tools. Exactly as seen in an OEM parts catalog.`;
+    const styledPrompt = `A precise black and white technical line drawing illustration of ${correctedPrompt}, completely isolated on a pure white background. The drawing shows ONLY the exact specific part with accurate proportions, mounting points, threads, and mechanical details. Clean vector-style line art with fine cross-hatching and stippling shading for depth. No color, no gradients, no background elements, no text, no labels, no watermarks, no random extra parts. Identical style to a factory service manual technical schematic.`;
     
     const response = await openai.images.generate({
       model: "dall-e-3",
