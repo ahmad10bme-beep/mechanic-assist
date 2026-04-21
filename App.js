@@ -19,9 +19,17 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
 import ImageScreen from './ImageScreen';
+
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
 const API_BASE_URL = 'https://mechanic-assist.onrender.com';
+const STORAGE_KEY = '@mechanic-assist:history:v1';
+const SAVED_CHATS_KEY = '@mechanic-assist:saved-chats:v1';
+const THEME_COLOR_KEY = '@mechanic-assist:theme-color:v1';
+const BACKGROUND_THEME_KEY = '@mechanic-assist:background-theme:v1';
+const FONT_SIZE_KEY = '@mechanic-assist:font-size:v1';
+const SOUND_ENABLED_KEY = '@mechanic-assist:sound-enabled:v1';
 
 export default function App() {
   const scrollViewRef = useRef(null);
@@ -38,6 +46,9 @@ export default function App() {
   const [savedChats, setSavedChats] = useState([]);
   const [backgroundTheme, setBackgroundTheme] = useState('dark');
   const [newMessageIndex, setNewMessageIndex] = useState(null);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [fontSize, setFontSize] = useState('normal'); // 'small', 'normal', 'large'
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -58,6 +69,10 @@ export default function App() {
         if (theme) setThemeColor(theme);
         const bgTheme = await AsyncStorage.getItem(BACKGROUND_THEME_KEY);
         if (bgTheme) setBackgroundTheme(bgTheme);
+        const savedFontSize = await AsyncStorage.getItem(FONT_SIZE_KEY);
+        if (savedFontSize) setFontSize(savedFontSize);
+        const savedSound = await AsyncStorage.getItem(SOUND_ENABLED_KEY);
+        if (savedSound !== null) setSoundEnabled(savedSound === 'true');
       } catch (e) {
         console.warn(e);
       } finally {
@@ -123,6 +138,16 @@ export default function App() {
     await AsyncStorage.setItem(BACKGROUND_THEME_KEY, theme);
   };
 
+  const changeFontSize = async (size) => {
+    setFontSize(size);
+    await AsyncStorage.setItem(FONT_SIZE_KEY, size);
+  };
+
+  const toggleSound = async () => {
+    setSoundEnabled(!soundEnabled);
+    await AsyncStorage.setItem(SOUND_ENABLED_KEY, String(!soundEnabled));
+  };
+
   const getGradientColors = () => {
     const themes = {
       dark: ['#121212', '#1a1a2e', '#16213e'],
@@ -170,6 +195,21 @@ export default function App() {
 
       if (res.ok) {
         setMessages(prev => [...prev, { role: 'assistant', text: data.reply, ts: Date.now() }]);
+        if (soundEnabled) {
+          // Play notification beep
+          try {
+            const sound = new Audio.Sound();
+            await sound.loadAsync(require('./assets/notification.mp3'));
+            await sound.playAsync();
+            sound.setOnPlaybackStatusUpdate(async (status) => {
+              if (status.didJustFinish) {
+                await sound.unloadAsync();
+              }
+            });
+          } catch (e) {
+            console.log('Sound not available');
+          }
+        }
       } else {
         throw new Error(data.error || 'السيرفر يواجه ضغطاً حالياً');
       }
@@ -195,7 +235,7 @@ export default function App() {
     Alert.alert('📋 تم النسخ', 'تم نسخ الرسالة إلى الحافظة');
   };
 
-  const styles = getStyles(themeColor);
+  const styles = getStyles(themeColor, fontSize);
 
   if (!isInitialized) return null;
 
@@ -242,6 +282,9 @@ export default function App() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { shareChat(); setMenuVisible(false); }}>
               <Text style={styles.menuItemText}>📤 مشاركة المحادثة</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setSettingsModalVisible(true); setMenuVisible(false); }}>
+              <Text style={styles.menuItemText}>⚙️ الإعدادات</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -318,6 +361,53 @@ export default function App() {
               <Text style={styles.infoModalButtonText}>تم</Text>
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={settingsModalVisible} transparent={true} animationType="slide" onRequestClose={() => setSettingsModalVisible(false)}>
+        <View style={styles.infoModalOverlay}>
+          <View style={styles.infoModalContent}>
+            <Text style={styles.infoModalTitle}>⚙️ الإعدادات</Text>
+            <ScrollView style={styles.infoModalScroll}>
+              
+              <Text style={styles.infoModalSection}>🔤 حجم الخط</Text>
+              <View style={styles.fontSizeOptions}>
+                <TouchableOpacity 
+                  style={[styles.fontSizeOption, fontSize === 'small' && styles.selectedFontSize]}
+                  onPress={() => changeFontSize('small')}
+                >
+                  <Text style={[styles.fontSizeText, {fontSize: 12}]}>صغير</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.fontSizeOption, fontSize === 'normal' && styles.selectedFontSize]}
+                  onPress={() => changeFontSize('normal')}
+                >
+                  <Text style={[styles.fontSizeText, {fontSize: 14}]}>عادي</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.fontSizeOption, fontSize === 'large' && styles.selectedFontSize]}
+                  onPress={() => changeFontSize('large')}
+                >
+                  <Text style={[styles.fontSizeText, {fontSize: 18}]}>كبير</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.infoModalSection}>🔊 صوت الإشعارات</Text>
+              <View style={styles.soundToggleContainer}>
+                <Text style={styles.soundToggleText}>تشغيل صوت عند وصول الرد</Text>
+                <TouchableOpacity 
+                  style={[styles.toggleButton, soundEnabled && styles.toggleActive]}
+                  onPress={toggleSound}
+                >
+                  <Text style={styles.toggleText}>{soundEnabled ? '✓' : '✗'}</Text>
+                </TouchableOpacity>
+              </View>
+              
+            </ScrollView>
+            <TouchableOpacity onPress={() => setSettingsModalVisible(false)} style={styles.infoModalButton}>
+              <Text style={styles.infoModalButtonText}>تم</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
@@ -442,35 +532,53 @@ export default function App() {
   );
 }
 
-const getStyles = (themeColor) => StyleSheet.create({
+const getStyles = (themeColor, fontSize = 'normal') => {
+  const getScaledSize = (baseSize) => {
+    switch (fontSize) {
+      case 'small': return baseSize * 0.85;
+      case 'large': return baseSize * 1.25;
+      default: return baseSize;
+    }
+  };
+
+  return StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: 'transparent' },
   welcomeContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', marginTop: 50 },
-  welcomeTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
-  welcomeText: { color: '#aaa', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
-  welcomeTip: { color: '#FFD700', fontSize: 14, textAlign: 'center', backgroundColor: '#2A2A2A', padding: 12, borderRadius: 10, overflow: 'hidden' },
+  welcomeTitle: { color: '#fff', fontSize: getScaledSize(22), fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  welcomeText: { color: '#aaa', fontSize: getScaledSize(16), textAlign: 'center', lineHeight: getScaledSize(24), marginBottom: 20 },
+  welcomeTip: { color: '#FFD700', fontSize: getScaledSize(14), textAlign: 'center', backgroundColor: '#2A2A2A', padding: 12, borderRadius: 10, overflow: 'hidden' },
   header: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#333' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerCenter: { alignItems: 'center', flex: 1 },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  headerSubtitle: { color: themeColor, fontSize: 12, marginTop: 4 },
+  headerTitle: { color: '#fff', fontSize: getScaledSize(20), fontWeight: 'bold' },
+  headerSubtitle: { color: themeColor, fontSize: getScaledSize(12), marginTop: 4 },
   menuButton: { padding: 8 },
   menuIcon: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
   menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 200, zIndex: 10, elevation: 5 },
   menuItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#444' },
-  menuItemText: { color: '#fff', fontSize: 15, textAlign: 'right' },
+  menuItemText: { color: '#fff', fontSize: getScaledSize(15), textAlign: 'right' },
   messagesList: { flex: 1, padding: 15, backgroundColor: 'transparent' },
   bubble: { padding: 12, borderRadius: 15, marginBottom: 10, maxWidth: '85%' },
   bubbleUser: { alignSelf: 'flex-end', backgroundColor: themeColor },
   bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: 'rgba(30,30,30,0.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  bubbleText: { color: '#fff', textAlign: 'right', lineHeight: 22 },
-  bubbleTime: { color: '#888', fontSize: 10, textAlign: 'right', marginTop: 4 },
-  copyHint: { color: '#666', fontSize: 9, textAlign: 'center', marginTop: 6, opacity: 0.7 },
+  bubbleText: { color: '#fff', fontSize: getScaledSize(15), textAlign: 'right', lineHeight: getScaledSize(22) },
+  bubbleTime: { color: '#888', fontSize: getScaledSize(10), textAlign: 'right', marginTop: 4 },
+  copyHint: { color: '#666', fontSize: getScaledSize(9), textAlign: 'center', marginTop: 6, opacity: 0.7 },
+  fontSizeOptions: { flexDirection: 'row', justifyContent: 'center', marginVertical: 15 },
+  fontSizeOption: { backgroundColor: '#2A2A2A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, marginHorizontal: 5 },
+  selectedFontSize: { backgroundColor: themeColor },
+  fontSizeText: { color: '#fff' },
+  soundToggleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2A2A2A', padding: 15, borderRadius: 10, marginVertical: 10 },
+  soundToggleText: { color: '#fff', fontSize: getScaledSize(14) },
+  toggleButton: { width: 40, height: 25, borderRadius: 12, backgroundColor: '#666', justifyContent: 'center', alignItems: 'center' },
+  toggleActive: { backgroundColor: themeColor },
+  toggleText: { color: '#fff', fontWeight: 'bold' },
   footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', backgroundColor: 'transparent' },
   chatInput: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 45, textAlign: 'right' },
   sendButton: { backgroundColor: themeColor, marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', padding: 10 },
-  loadingText: { color: '#888', marginLeft: 10, fontSize: 12 },
+  loadingText: { color: '#888', marginLeft: 10, fontSize: getScaledSize(12) },
   infoButton: { padding: 8 },
   infoIcon: { color: '#FFD700', fontSize: 24 },
   infoModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
@@ -506,4 +614,5 @@ const getStyles = (themeColor) => StyleSheet.create({
   themeGradientPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
-});
+  });
+};
