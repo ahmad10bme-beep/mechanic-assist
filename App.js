@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Clipboard,
   KeyboardAvoidingView,
   Modal,
@@ -19,12 +20,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ImageScreen from './ImageScreen';
-import * as Sharing from 'expo-sharing';
-
-const STORAGE_KEY = '@mechanic-assist:history:v1';
-const SAVED_CHATS_KEY = '@mechanic-assist:saved-chats:v1';
-const THEME_COLOR_KEY = '@mechanic-assist:theme-color:v1';
-const BACKGROUND_THEME_KEY = '@mechanic-assist:background-theme:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
 const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
@@ -42,6 +37,7 @@ export default function App() {
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [savedChats, setSavedChats] = useState([]);
   const [backgroundTheme, setBackgroundTheme] = useState('dark');
+  const [newMessageIndex, setNewMessageIndex] = useState(null);
 
   useEffect(() => {
     async function prepare() {
@@ -139,7 +135,10 @@ export default function App() {
 
     setInput('');
     const userMsg = { role: 'user', text, ts: Date.now() };
+    const newIndex = messages.length;
     setMessages(prev => [...prev, userMsg]);
+    setNewMessageIndex(newIndex);
+    setTimeout(() => setNewMessageIndex(null), 500);
     setLoading(true);
 
     const controller = new AbortController();
@@ -360,12 +359,23 @@ export default function App() {
           {messages.map((m, i) => (
             <TouchableOpacity 
               key={i} 
-              style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}
+              style={[
+                styles.bubble, 
+                m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
+                newMessageIndex === i && styles.newMessageGlow
+              ]}
               onPress={() => copyMessage(m.text)}
               onLongPress={() => copyMessage(m.text)}
             >
               <Text style={styles.bubbleText}>{m.text}</Text>
-              {m.ts ? <Text style={styles.bubbleTime}>{new Date(m.ts).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</Text> : null}
+              {m.ts ? (
+                <Text style={styles.bubbleTime}>
+                  {new Date(m.ts).toLocaleTimeString('ar-SA', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              ) : null}
               <Text style={styles.copyHint}>📋 انقر للنسخ</Text>
             </TouchableOpacity>
           ))}
@@ -456,6 +466,7 @@ const getStyles = (themeColor) => StyleSheet.create({
   themeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 10, borderRadius: 10, margin: 5, minWidth: 100 },
   selectedTheme: { borderWidth: 2, borderColor: themeColor },
   gradientBackground: { flex: 1 },
+  newMessageGlow: { shadowColor: '#fff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10, elevation: 10 },
   themeGradientPreview: { width: 40, height: 40, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
