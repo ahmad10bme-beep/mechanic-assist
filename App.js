@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Clipboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -174,6 +175,11 @@ export default function App() {
   const shareChat = async () => {
     const text = messages.map(m => `${m.role === 'user' ? 'أنت' : 'المساعد'}: ${m.text}`).join('\n');
     await Sharing.shareAsync(text);
+  };
+
+  const copyMessage = (text) => {
+    Clipboard.setString(text);
+    Alert.alert('📋 تم النسخ', 'تم نسخ الرسالة إلى الحافظة');
   };
 
   const styles = getStyles(themeColor);
@@ -350,10 +356,16 @@ export default function App() {
             </View>
           )}
           {messages.map((m, i) => (
-            <View key={i} style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
+            <TouchableOpacity 
+              key={i} 
+              style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}
+              onPress={() => copyMessage(m.text)}
+              onLongPress={() => copyMessage(m.text)}
+            >
               <Text style={styles.bubbleText}>{m.text}</Text>
               {m.ts ? <Text style={styles.bubbleTime}>{new Date(m.ts).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</Text> : null}
-            </View>
+              <Text style={styles.copyHint}>📋 انقر للنسخ</Text>
+            </TouchableOpacity>
           ))}
           {loading && (
             <View style={styles.loadingContainer}>
@@ -403,6 +415,7 @@ const getStyles = (themeColor) => StyleSheet.create({
   bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333' },
   bubbleText: { color: '#fff', textAlign: 'right', lineHeight: 22 },
   bubbleTime: { color: '#888', fontSize: 10, textAlign: 'right', marginTop: 4 },
+  copyHint: { color: '#666', fontSize: 9, textAlign: 'center', marginTop: 6, opacity: 0.7 },
   footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#333', backgroundColor: '#121212' },
   chatInput: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 45, textAlign: 'right' },
   sendButton: { backgroundColor: themeColor, marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
