@@ -72,8 +72,8 @@ export default function App() {
     if (newMessageIndex !== null) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(glowAnim, { toValue: 1, duration: 600, useNativeDriver: false }),
-          Animated.timing(glowAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
+          Animated.timing(glowAnim, { toValue: 1, duration: 800, useNativeDriver: false }),
+          Animated.timing(glowAnim, { toValue: 0, duration: 800, useNativeDriver: false }),
         ]),
         { iterations: 2 }
       ).start();
@@ -151,7 +151,7 @@ export default function App() {
     const newIndex = messages.length;
     setMessages(prev => [...prev, userMsg]);
     setNewMessageIndex(newIndex);
-    setTimeout(() => setNewMessageIndex(null), 2400);
+    setTimeout(() => setNewMessageIndex(null), 3500);
     setLoading(true);
 
     const controller = new AbortController();
@@ -378,11 +378,26 @@ export default function App() {
                 newMessageIndex === i && {
                   shadowColor: glowAnim.interpolate({
                     inputRange: [0, 0.33, 0.66, 1],
-                    outputRange: ['#fff', themeColor, '#FFD700', '#fff']
+                    outputRange: ['#ffffff', themeColor, '#FFD700', '#ffffff']
                   }),
-                  shadowOpacity: 1,
-                  shadowRadius: 15,
-                  elevation: 15,
+                  shadowOpacity: glowAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.3, 1, 0.3]
+                  }),
+                  shadowRadius: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [5, 30]
+                  }),
+                  elevation: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [5, 25]
+                  }),
+                  transform: [{
+                    scale: glowAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [1, 1.02, 1]
+                    })
+                  }]
                 }
               ]}
               onPress={() => copyMessage(m.text)}
