@@ -21,6 +21,8 @@ import ImageScreen from './ImageScreen';
 import * as Sharing from 'expo-sharing';
 
 const STORAGE_KEY = '@mechanic-assist:history:v1';
+const SAVED_CHATS_KEY = '@mechanic-assist:saved-chats:v1';
+const THEME_COLOR_KEY = '@mechanic-assist:theme-color:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
 const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
@@ -33,6 +35,10 @@ export default function App() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [showImageScreen, setShowImageScreen] = useState(false);
   const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [savedChatsModalVisible, setSavedChatsModalVisible] = useState(false);
+  const [themeColor, setThemeColor] = useState('#007AFF');
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
+  const [savedChats, setSavedChats] = useState([]);
 
   useEffect(() => {
     async function prepare() {
@@ -43,6 +49,13 @@ export default function App() {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) setMessages(parsed);
         }
+        const saved = await AsyncStorage.getItem(SAVED_CHATS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setSavedChats(parsed);
+        }
+        const theme = await AsyncStorage.getItem(THEME_COLOR_KEY);
+        if (theme) setThemeColor(theme);
       } catch (e) {
         console.warn(e);
       } finally {
@@ -57,6 +70,39 @@ export default function App() {
     setMessages([]);
     await AsyncStorage.removeItem(STORAGE_KEY);
     setMenuVisible(false);
+  };
+
+  const saveCurrentChat = async () => {
+    if (messages.length === 0) {
+      Alert.alert('تنبيه', 'لا توجد محادثة لحفظها');
+      return;
+    }
+    const chatName = `محادثة ${new Date().toLocaleDateString('ar-SA')} ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`;
+    const newSavedChat = { id: Date.now(), name: chatName, messages: [...messages], date: Date.now() };
+    const updated = [...savedChats, newSavedChat];
+    setSavedChats(updated);
+    await AsyncStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(updated));
+    Alert.alert('✅ تم الحفظ', `تم حفظ المحادثة: ${chatName}`);
+    setMenuVisible(false);
+  };
+
+  const loadSavedChat = async (chat) => {
+    setMessages(chat.messages);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(chat.messages));
+    setSavedChatsModalVisible(false);
+    Alert.alert('📚 تم التحميل', `تم استعادة: ${chat.name}`);
+  };
+
+  const deleteSavedChat = async (chatId) => {
+    const updated = savedChats.filter(c => c.id !== chatId);
+    setSavedChats(updated);
+    await AsyncStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(updated));
+  };
+
+  const changeThemeColor = async (color) => {
+    setThemeColor(color);
+    await AsyncStorage.setItem(THEME_COLOR_KEY, color);
+    setColorPickerVisible(false);
   };
 
   const newChat = () => {
@@ -142,12 +188,69 @@ export default function App() {
             <TouchableOpacity style={styles.menuItem} onPress={clearChat}>
               <Text style={styles.menuItemText}>🗑️ مسح المحادثة</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={saveCurrentChat}>
+              <Text style={styles.menuItemText}>💾 حفظ المحادثة</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setSavedChatsModalVisible(true); setMenuVisible(false); }}>
+              <Text style={styles.menuItemText}>📚 المحادثات المحفوظة ({savedChats.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setColorPickerVisible(true); setMenuVisible(false); }}>
+              <Text style={styles.menuItemText}>🎨 تغيير اللون</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { shareChat(); setMenuVisible(false); }}>
               <Text style={styles.menuItemText}>📤 مشاركة المحادثة</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
+
+      <Modal visible={savedChatsModalVisible} transparent={true} animationType="slide" onRequestClose={() => setSavedChatsModalVisible(false)}>
+        <View style={styles.savedChatsModalOverlay}>
+          <View style={styles.savedChatsModalContent}>
+            <Text style={styles.savedChatsModalTitle}>📚 المحادثات المحفوظة</Text>
+            <ScrollView style={styles.savedChatsScroll}>
+              {savedChats.length === 0 ? (
+                <Text style={styles.noSavedChatsText}>لا توجد محادثات محفوظة</Text>
+              ) : (
+                savedChats.map(chat => (
+                  <View key={chat.id} style={styles.savedChatItem}>
+                    <TouchableOpacity style={styles.savedChatButton} onPress={() => loadSavedChat(chat)}>
+                      <Text style={styles.savedChatName}>{chat.name}</Text>
+                      <Text style={styles.savedChatDate}>{new Date(chat.date).toLocaleDateString('ar-SA')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.deleteChatButton} onPress={() => deleteSavedChat(chat.id)}>
+                      <Text style={styles.deleteChatText}>🗑️</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity onPress={() => setSavedChatsModalVisible(false)} style={styles.infoModalButton}>
+              <Text style={styles.infoModalButtonText}>إغلاق</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={colorPickerVisible} transparent={true} animationType="slide" onRequestClose={() => setColorPickerVisible(false)}>
+        <View style={styles.colorPickerOverlay}>
+          <View style={styles.colorPickerContent}>
+            <Text style={styles.colorPickerTitle}>🎨 اختيار لون السمة</Text>
+            <View style={styles.colorOptions}>
+              {['#007AFF', '#34C759', '#FF3B30', '#AF52DE', '#FF9500', '#5856D6'].map(color => (
+                <TouchableOpacity
+                  key={color}
+                  style={[styles.colorOption, { backgroundColor: color }, themeColor === color && styles.selectedColor]}
+                  onPress={() => changeThemeColor(color)}
+                />
+              ))}
+            </View>
+            <TouchableOpacity onPress={() => setColorPickerVisible(false)} style={styles.infoModalButton}>
+              <Text style={styles.infoModalButtonText}>تم</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={infoModalVisible} transparent={true} animationType="slide" onRequestClose={() => setInfoModalVisible(false)}>
         <View style={styles.infoModalOverlay}>
@@ -239,7 +342,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerCenter: { alignItems: 'center', flex: 1 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  headerSubtitle: { color: '#007AFF', fontSize: 12, marginTop: 4 },
+  headerSubtitle: { color: themeColor, fontSize: 12, marginTop: 4 },
   menuButton: { padding: 8 },
   menuIcon: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
   menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 160, zIndex: 10, elevation: 5 },
@@ -247,13 +350,13 @@ const styles = StyleSheet.create({
   menuItemText: { color: '#fff', fontSize: 15, textAlign: 'right' },
   messagesList: { flex: 1, padding: 15 },
   bubble: { padding: 12, borderRadius: 15, marginBottom: 10, maxWidth: '85%' },
-  bubbleUser: { alignSelf: 'flex-end', backgroundColor: '#0B5FFF' },
+  bubbleUser: { alignSelf: 'flex-end', backgroundColor: themeColor },
   bubbleAssistant: { alignSelf: 'flex-start', backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333' },
   bubbleText: { color: '#fff', textAlign: 'right', lineHeight: 22 },
   bubbleTime: { color: '#888', fontSize: 10, textAlign: 'right', marginTop: 4 },
   footer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#333', backgroundColor: '#121212' },
   chatInput: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', borderRadius: 25, paddingHorizontal: 20, height: 45, textAlign: 'right' },
-  sendButton: { backgroundColor: '#007AFF', marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
+  sendButton: { backgroundColor: themeColor, marginLeft: 10, paddingHorizontal: 20, borderRadius: 25, justifyContent: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', padding: 10 },
   loadingText: { color: '#888', marginLeft: 10, fontSize: 12 },
@@ -263,8 +366,25 @@ const styles = StyleSheet.create({
   infoModalContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: '#333' },
   infoModalTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
   infoModalScroll: { maxHeight: 400 },
-  infoModalSection: { color: '#007AFF', fontSize: 16, fontWeight: 'bold', marginTop: 15, marginBottom: 5, textAlign: 'right' },
+  infoModalSection: { color: themeColor, fontSize: 16, fontWeight: 'bold', marginTop: 15, marginBottom: 5, textAlign: 'right' },
   infoModalText: { color: '#ccc', fontSize: 14, lineHeight: 22, textAlign: 'right', marginBottom: 5 },
-  infoModalButton: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25, marginTop: 20, alignSelf: 'center' },
+  infoModalButton: { backgroundColor: themeColor, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25, marginTop: 20, alignSelf: 'center' },
+  savedChatsModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  savedChatsModalContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '90%', maxHeight: '70%', borderWidth: 1, borderColor: '#333' },
+  savedChatsModalTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  savedChatsScroll: { maxHeight: 350 },
+  noSavedChatsText: { color: '#888', textAlign: 'center', fontSize: 16, marginTop: 30 },
+  savedChatItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 12, borderRadius: 10, marginBottom: 10 },
+  savedChatButton: { flex: 1 },
+  savedChatName: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'right' },
+  savedChatDate: { color: '#888', fontSize: 12, textAlign: 'right', marginTop: 4 },
+  deleteChatButton: { padding: 8, marginLeft: 10 },
+  deleteChatText: { fontSize: 18 },
+  colorPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  colorPickerContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '80%', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  colorPickerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  colorOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15 },
+  colorOption: { width: 50, height: 50, borderRadius: 25 },
+  selectedColor: { borderWidth: 3, borderColor: '#fff' },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
