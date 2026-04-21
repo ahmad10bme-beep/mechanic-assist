@@ -51,37 +51,52 @@ function correctSpelling(text) {
 }
 
 // Search Wikimedia Commons for REAL car part images (FREE - no API key needed!)
-async function searchRealImage(query) {
-  try {
-    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' car part')}&srnamespace=6&srlimit=5&format=json&origin=*`;
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
+// Tries multiple search strategies for maximum accuracy
+async function searchRealImage(queries) {
+  for (const query of queries) {
+    if (!query || query.length < 3) continue;
     
-    if (!searchData.query?.search?.length) return null;
-    
-    // Try each result until we find one with a valid image
-    for (const result of searchData.query.search) {
-      const title = result.title;
-      const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=800&format=json&origin=*`;
-      const infoRes = await fetch(imageInfoUrl);
-      const infoData = await infoRes.json();
-      const pages = infoData.query?.pages;
-      if (!pages) continue;
+    try {
+      console.log('Searching Wikimedia for:', query);
       
-      const page = Object.values(pages)[0];
-      if (page.imageinfo?.[0]?.thumburl) {
-        return {
-          url: page.imageinfo[0].thumburl,
-          source: 'real',
-          title: title
-        };
+      // Strategy 1: Direct image search in File namespace
+      const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=10&format=json&origin=*`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+      
+      if (searchData.query?.search?.length) {
+        // Get image info for ALL results at once (more efficient)
+        const titles = searchData.query.search.map(r => r.title).join('|');
+        const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|thumburl|mime&iiurlwidth=800&format=json&origin=*`;
+        const infoRes = await fetch(imageInfoUrl);
+        const infoData = await infoRes.json();
+        
+        if (infoData.query?.pages) {
+          for (const page of Object.values(infoData.query.pages)) {
+            // Only accept actual image files (not SVG diagrams)
+            const mime = page.imageinfo?.[0]?.mime || '';
+            const url = page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url;
+            
+            if (url && (mime.startsWith('image/jpeg') || mime.startsWith('image/png') || mime === '')) {
+              // Skip very small images (likely icons or diagrams)
+              const width = page.imageinfo?.[0]?.width || 800;
+              if (width >= 300) {
+                console.log('Found REAL image:', url);
+                return {
+                  url: url,
+                  source: 'real',
+                  title: page.title
+                };
+              }
+            }
+          }
+        }
       }
+    } catch (e) {
+      console.log('Search failed for query "' + query + '":', e.message);
     }
-    return null;
-  } catch (e) {
-    console.log('Real image search failed:', e.message);
-    return null;
   }
+  return null;
 }
 
 app.post('/image', async (req, res) => {
@@ -99,18 +114,13 @@ app.post('/image', async (req, res) => {
       `${carMake || ''} ${carModel || ''} ${partName || ''}`.trim(),
       `${partName || ''} car ${carMake || ''}`.trim(),
       `${partName || ''} automotive`.trim(),
+      `${carMake || ''} ${partName || ''}`.trim(),
+      partName || '',
       correctedPrompt
-    ];
+    ].filter(t => t && t.length >= 3); // Remove empty/short terms
     
-    let realImage = null;
-    for (const term of searchTerms) {
-      if (term.length < 3) continue;
-      realImage = await searchRealImage(term);
-      if (realImage) {
-        console.log('Found REAL image:', realImage.url);
-        break;
-      }
-    }
+    console.log('Searching with terms:', searchTerms);
+    const realImage = await searchRealImage(searchTerms);
 
     if (realImage) {
       return res.json({ 
@@ -123,7 +133,7 @@ app.post('/image', async (req, res) => {
     // STEP 2: Fallback to DALL-E 3 (much better than DALL-E 2!)
     console.log('No real image found, using DALL-E 3...');
     
-    const styledPrompt = `A highly detailed, photorealistic image of ${correctedPrompt}, showing the exact specific car part clearly and accurately. The image should look like a professional auto parts catalog photograph. Clean background, proper lighting, all details visible and anatomically correct. No text, no labels, no watermarks.`;
+    const styledPrompt = `Professional automotive parts catalog photograph of ${correctedPrompt}. Shot from a clear angle showing the complete part with all mounting points, connectors, and surface details clearly visible. The part is centered on a clean neutral gray background with soft even studio lighting. Ultra-sharp focus, no shadows obscuring details, no text, no labels, no watermarks, no hands, no tools. Exactly as seen in an OEM parts catalog.`;
     
     const response = await openai.images.generate({
       model: "dall-e-3",
