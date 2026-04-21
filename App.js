@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -113,16 +114,16 @@ export default function App() {
     await AsyncStorage.setItem(BACKGROUND_THEME_KEY, theme);
   };
 
-  const getBackgroundStyle = () => {
+  const getBackgroundSource = () => {
     const themes = {
-      dark: { backgroundColor: '#121212' },
-      midnight: { backgroundColor: '#0a0a1a' },
-      ocean: { backgroundColor: '#001a33' },
-      forest: { backgroundColor: '#0a1f0a' },
-      royal: { backgroundColor: '#1a0a33' },
-      sunset: { backgroundColor: '#2a1a1a' },
-      space: { backgroundColor: '#000000' },
-      charcoal: { backgroundColor: '#1a1a2e' },
+      dark: require('./assets/backgrounds/dark.jpg'),
+      midnight: require('./assets/backgrounds/midnight.jpg'),
+      ocean: require('./assets/backgrounds/ocean.jpg'),
+      forest: require('./assets/backgrounds/forest.jpg'),
+      royal: require('./assets/backgrounds/royal.jpg'),
+      sunset: require('./assets/backgrounds/sunset.jpg'),
+      space: require('./assets/backgrounds/space.jpg'),
+      charcoal: require('./assets/backgrounds/charcoal.jpg'),
     };
     return themes[backgroundTheme] || themes.dark;
   };
@@ -186,7 +187,8 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, getBackgroundStyle()]}>
+    <ImageBackground source={getBackgroundSource()} style={styles.backgroundImage} resizeMode="cover">
+      <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -379,6 +381,7 @@ export default function App() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -440,7 +443,8 @@ const getStyles = (themeColor) => StyleSheet.create({
   themeOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginVertical: 10 },
   themeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 10, borderRadius: 10, margin: 5, minWidth: 100 },
   selectedTheme: { borderWidth: 2, borderColor: themeColor },
-  themeColorPreview: { width: 20, height: 20, borderRadius: 10, marginLeft: 8 },
+  themeImagePreview: { width: 50, height: 50, borderRadius: 8, marginLeft: 8 },
   themeName: { color: '#fff', fontSize: 13 },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
