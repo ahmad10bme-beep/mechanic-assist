@@ -155,6 +155,8 @@ export default function App() {
     await Sharing.shareAsync(text);
   };
 
+  const styles = getStyles(themeColor);
+
   if (!isInitialized) return null;
 
   if (showImageScreen) {
@@ -332,7 +334,7 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (themeColor) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#121212' },
   welcomeContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', marginTop: 50 },
   welcomeTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
@@ -345,7 +347,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { color: themeColor, fontSize: 12, marginTop: 4 },
   menuButton: { padding: 8 },
   menuIcon: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 160, zIndex: 10, elevation: 5 },
+  menuDropdown: { position: 'absolute', top: 55, left: 10, backgroundColor: '#2A2A2A', borderRadius: 10, borderWidth: 1, borderColor: '#444', minWidth: 200, zIndex: 10, elevation: 5 },
   menuItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#444' },
   menuItemText: { color: '#fff', fontSize: 15, textAlign: 'right' },
   messagesList: { flex: 1, padding: 15 },
