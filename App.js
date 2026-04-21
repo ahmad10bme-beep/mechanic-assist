@@ -38,6 +38,7 @@ export default function App() {
   const [savedChats, setSavedChats] = useState([]);
   const [backgroundTheme, setBackgroundTheme] = useState('dark');
   const [newMessageIndex, setNewMessageIndex] = useState(null);
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     async function prepare() {
@@ -66,6 +67,18 @@ export default function App() {
     }
     prepare();
   }, []);
+
+  useEffect(() => {
+    if (newMessageIndex !== null) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, { toValue: 1, duration: 600, useNativeDriver: false }),
+          Animated.timing(glowAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
+        ]),
+        { iterations: 2 }
+      ).start();
+    }
+  }, [newMessageIndex]);
 
   const clearChat = async () => {
     setMessages([]);
@@ -138,7 +151,7 @@ export default function App() {
     const newIndex = messages.length;
     setMessages(prev => [...prev, userMsg]);
     setNewMessageIndex(newIndex);
-    setTimeout(() => setNewMessageIndex(null), 500);
+    setTimeout(() => setNewMessageIndex(null), 2400);
     setLoading(true);
 
     const controller = new AbortController();
@@ -362,7 +375,15 @@ export default function App() {
               style={[
                 styles.bubble, 
                 m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
-                newMessageIndex === i && styles.newMessageGlow
+                newMessageIndex === i && {
+                  shadowColor: glowAnim.interpolate({
+                    inputRange: [0, 0.33, 0.66, 1],
+                    outputRange: ['#fff', themeColor, '#FFD700', '#fff']
+                  }),
+                  shadowOpacity: 1,
+                  shadowRadius: 15,
+                  elevation: 15,
+                }
               ]}
               onPress={() => copyMessage(m.text)}
               onLongPress={() => copyMessage(m.text)}
