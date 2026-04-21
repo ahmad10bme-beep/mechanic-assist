@@ -55,10 +55,35 @@ async function expandPartName(partName) {
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'You are an automotive parts expert. Given a simple part name in any language, respond with ONLY the exact English technical automotive term for that specific part. Be precise. No extra words, no sentences, just the part name.' },
-        { role: 'user', content: `What is the exact automotive part called: "${partName}"? Respond with only the English technical part name.` }
+        { 
+          role: 'system', 
+          content: `You are an expert automotive parts catalog specialist. Your job is to translate ANY car part name (in any language) to the EXACT English technical OEM automotive term.
+
+Examples of correct translations:
+- "فرامل" → "disc brake caliper assembly"
+- "بواجي" → "spark plug"
+- "كرسي مكينة" → "engine motor mount"
+- "رديتر" → "radiator cooling unit"
+- "تيل فرامل" → "brake pad set"
+- "صوفة مكينة" → "engine cylinder head gasket"
+- "كويل" → "ignition coil"
+- "دينمو" → "alternator generator"
+- "سلف" → "starter motor"
+- "قطع غيار تويوتا كامري" → "Toyota Camry brake caliper"
+
+Rules:
+1. Identify the EXACT specific part, not generic category
+2. Include the specific component type (disc/drum/caliper/pad/rotor)
+3. Use standard OEM catalog terminology
+4. If user mentions car brand/model, include it for accuracy
+5. Respond with ONLY the technical term, nothing else
+6. Maximum 10 words` 
+        },
+        { role: 'user', content: `Part name: "${partName}"
+
+Provide the exact English technical automotive term:` }
       ],
-      max_tokens: 30,
+      max_tokens: 50,
       temperature: 0
     });
     const expanded = completion.choices[0].message.content.trim();
