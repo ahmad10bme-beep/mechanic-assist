@@ -23,6 +23,7 @@ import * as Sharing from 'expo-sharing';
 const STORAGE_KEY = '@mechanic-assist:history:v1';
 const SAVED_CHATS_KEY = '@mechanic-assist:saved-chats:v1';
 const THEME_COLOR_KEY = '@mechanic-assist:theme-color:v1';
+const BACKGROUND_THEME_KEY = '@mechanic-assist:background-theme:v1';
 // الرابط العالمي الخاص بك على Render - تأكد من صحته 100%
 const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
@@ -39,6 +40,7 @@ export default function App() {
   const [themeColor, setThemeColor] = useState('#007AFF');
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [savedChats, setSavedChats] = useState([]);
+  const [backgroundTheme, setBackgroundTheme] = useState('dark');
 
   useEffect(() => {
     async function prepare() {
@@ -56,6 +58,8 @@ export default function App() {
         }
         const theme = await AsyncStorage.getItem(THEME_COLOR_KEY);
         if (theme) setThemeColor(theme);
+        const bgTheme = await AsyncStorage.getItem(BACKGROUND_THEME_KEY);
+        if (bgTheme) setBackgroundTheme(bgTheme);
       } catch (e) {
         console.warn(e);
       } finally {
@@ -102,7 +106,25 @@ export default function App() {
   const changeThemeColor = async (color) => {
     setThemeColor(color);
     await AsyncStorage.setItem(THEME_COLOR_KEY, color);
-    setColorPickerVisible(false);
+  };
+
+  const changeBackgroundTheme = async (theme) => {
+    setBackgroundTheme(theme);
+    await AsyncStorage.setItem(BACKGROUND_THEME_KEY, theme);
+  };
+
+  const getBackgroundStyle = () => {
+    const themes = {
+      dark: { backgroundColor: '#121212' },
+      midnight: { backgroundColor: '#0a0a1a' },
+      ocean: { backgroundColor: '#001a33' },
+      forest: { backgroundColor: '#0a1f0a' },
+      royal: { backgroundColor: '#1a0a33' },
+      sunset: { backgroundColor: '#2a1a1a' },
+      space: { backgroundColor: '#000000' },
+      charcoal: { backgroundColor: '#1a1a2e' },
+    };
+    return themes[backgroundTheme] || themes.dark;
   };
 
   const newChat = () => {
@@ -164,7 +186,7 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, getBackgroundStyle()]}>
       <StatusBar style="light" />
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -236,10 +258,12 @@ export default function App() {
 
       <Modal visible={colorPickerVisible} transparent={true} animationType="slide" onRequestClose={() => setColorPickerVisible(false)}>
         <View style={styles.colorPickerOverlay}>
-          <View style={styles.colorPickerContent}>
-            <Text style={styles.colorPickerTitle}>🎨 اختيار لون السمة</Text>
+          <ScrollView style={styles.colorPickerContent}>
+            <Text style={styles.colorPickerTitle}>🎨 تخصيص المظهر</Text>
+            
+            <Text style={styles.colorSectionTitle}>🎈 ألوان الفقاعات</Text>
             <View style={styles.colorOptions}>
-              {['#007AFF', '#34C759', '#FF3B30', '#AF52DE', '#FF9500', '#5856D6'].map(color => (
+              {['#007AFF', '#34C759', '#FF3B30', '#AF52DE', '#FF9500', '#5856D6', '#FF2D55', '#5AC8FA'].map(color => (
                 <TouchableOpacity
                   key={color}
                   style={[styles.colorOption, { backgroundColor: color }, themeColor === color && styles.selectedColor]}
@@ -247,10 +271,34 @@ export default function App() {
                 />
               ))}
             </View>
+            
+            <Text style={styles.colorSectionTitle}>🖼️ خلفية التطبيق</Text>
+            <View style={styles.themeOptions}>
+              {[
+                { key: 'dark', name: '🌑 داكن', color: '#121212' },
+                { key: 'midnight', name: '🌌 ليلي', color: '#0a0a1a' },
+                { key: 'ocean', name: '🌊 محيطي', color: '#001a33' },
+                { key: 'forest', name: '🌲 غابي', color: '#0a1f0a' },
+                { key: 'royal', name: '👑 ملكي', color: '#1a0a33' },
+                { key: 'sunset', name: '🌅 غروب', color: '#2a1a1a' },
+                { key: 'space', name: '🚀 فضائي', color: '#000000' },
+                { key: 'charcoal', name: '🎱 فحمي', color: '#1a1a2e' },
+              ].map(theme => (
+                <TouchableOpacity
+                  key={theme.key}
+                  style={[styles.themeOption, backgroundTheme === theme.key && styles.selectedTheme]}
+                  onPress={() => changeBackgroundTheme(theme.key)}
+                >
+                  <View style={[styles.themeColorPreview, { backgroundColor: theme.color }]} />
+                  <Text style={styles.themeName}>{theme.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
             <TouchableOpacity onPress={() => setColorPickerVisible(false)} style={styles.infoModalButton}>
               <Text style={styles.infoModalButtonText}>تم</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -383,10 +431,16 @@ const getStyles = (themeColor) => StyleSheet.create({
   deleteChatButton: { padding: 8, marginLeft: 10 },
   deleteChatText: { fontSize: 18 },
   colorPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  colorPickerContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '80%', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
-  colorPickerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  colorOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15 },
-  colorOption: { width: 50, height: 50, borderRadius: 25 },
+  colorPickerContent: { backgroundColor: '#1E1E1E', borderRadius: 20, padding: 20, width: '85%', maxHeight: '80%', borderWidth: 1, borderColor: '#333' },
+  colorPickerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 15 },
+  colorSectionTitle: { color: themeColor, fontSize: 16, fontWeight: 'bold', textAlign: 'right', marginTop: 15, marginBottom: 10, alignSelf: 'flex-start' },
+  colorOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginVertical: 10 },
+  colorOption: { width: 40, height: 40, borderRadius: 20, margin: 5 },
   selectedColor: { borderWidth: 3, borderColor: '#fff' },
+  themeOptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginVertical: 10 },
+  themeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2A2A2A', padding: 10, borderRadius: 10, margin: 5, minWidth: 100 },
+  selectedTheme: { borderWidth: 2, borderColor: themeColor },
+  themeColorPreview: { width: 20, height: 20, borderRadius: 10, marginLeft: 8 },
+  themeName: { color: '#fff', fontSize: 13 },
   infoModalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
