@@ -17,12 +17,9 @@ import {
 const API_BASE_URL = 'https://mechanic-assist.onrender.com';
 
 export default function ImageScreen({ onBack }) {
-  const [carMake, setCarMake] = useState('');
-  const [carModel, setCarModel] = useState('');
-  const [carYear, setCarYear] = useState('');
   const [partName, setPartName] = useState('');
   const [generatedImage, setGeneratedImage] = useState(null);
-  const [imageSource, setImageSource] = useState(null); // 'real' or 'ai'
+  const [technicalName, setTechnicalName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const generateImage = async () => {
@@ -33,21 +30,19 @@ export default function ImageScreen({ onBack }) {
 
     setLoading(true);
     setGeneratedImage(null);
-    setImageSource(null);
-
-    const prompt = `a ${partName} for a ${carYear} ${carMake} ${carModel} car`;
+    setTechnicalName('');
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       console.log('Sending request to:', `${API_BASE_URL}/image`);
-      console.log('Request body:', { prompt, carMake, carModel, carYear, partName });
+      console.log('Request body:', { partName });
 
       const res = await fetch(`${API_BASE_URL}/image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, carMake, carModel, carYear, partName }),
+        body: JSON.stringify({ partName }),
         signal: controller.signal,
       });
 
@@ -66,9 +61,9 @@ export default function ImageScreen({ onBack }) {
       console.log('Response data:', data);
 
       if (res.ok) {
-        console.log('Image URL received:', data.imageUrl, 'Source:', data.source);
+        console.log('Image URL received:', data.imageUrl, 'Technical name:', data.partName);
         setGeneratedImage(data.imageUrl);
-        setImageSource(data.source || 'ai');
+        if (data.partName) setTechnicalName(data.partName);
       } else {
         throw new Error(data.error || 'خطأ في توليد الصورة');
       }
@@ -109,37 +104,12 @@ export default function ImageScreen({ onBack }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 20 }}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>نوع السيارة</Text>
-            <TextInput
-              style={styles.input}
-              value={carMake}
-              onChangeText={setCarMake}
-              placeholder="مثال: تويوتا"
-            />
-
-            <Text style={styles.label}>الموديل</Text>
-            <TextInput
-              style={styles.input}
-              value={carModel}
-              onChangeText={setCarModel}
-              placeholder="مثال: كوريلا"
-            />
-
-            <Text style={styles.label}>السنة</Text>
-            <TextInput
-              style={styles.input}
-              value={carYear}
-              onChangeText={setCarYear}
-              placeholder="مثال: 2015"
-              keyboardType="numeric"
-            />
-
             <Text style={styles.label}>اسم القطعة</Text>
             <TextInput
               style={styles.input}
               value={partName}
               onChangeText={setPartName}
-              placeholder="مثال: محرك، فرامل، تعليق..."
+              placeholder="مثال: فرامل، بواجي، كرسي مكينة، رديتر..."
             />
           </View>
 
@@ -156,13 +126,11 @@ export default function ImageScreen({ onBack }) {
 
           {generatedImage ? (
             <View style={styles.imageContainer}>
-              {imageSource && (
-                <View style={[styles.sourceBadge, imageSource === 'real' ? styles.realBadge : styles.aiBadge]}>
-                  <Text style={styles.sourceBadgeText}>
-                    {imageSource === 'real' ? '📸 صورة حقيقية' : '🎨 صورة AI'}
-                  </Text>
+              {technicalName ? (
+                <View style={styles.techBadge}>
+                  <Text style={styles.techBadgeText}>{technicalName}</Text>
                 </View>
-              )}
+              ) : null}
               <Image source={{ uri: generatedImage }} style={styles.generatedImage} resizeMode="contain" />
               <TouchableOpacity style={styles.saveButton} onPress={saveToGallery}>
                 <Text style={styles.saveIcon}>✓</Text>
@@ -237,14 +205,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: { color: '#666', fontSize: 16 },
-  sourceBadge: { 
+  techBadge: { 
+    backgroundColor: '#007AFF',
     paddingHorizontal: 12, 
     paddingVertical: 6, 
     borderRadius: 15, 
     marginBottom: 10,
     alignSelf: 'flex-start'
   },
-  realBadge: { backgroundColor: '#28A745' },
-  aiBadge: { backgroundColor: '#FF9500' },
-  sourceBadgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  techBadgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
 });

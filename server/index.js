@@ -2,7 +2,6 @@ require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const cors = require('cors');
 const { OpenAI } = require('openai');
-const fetch = require('node-fetch');
 
 const app = express();
 
@@ -50,90 +49,43 @@ function correctSpelling(text) {
   return corrected;
 }
 
-// Search Wikimedia Commons for REAL car part images (FREE - no API key needed!)
-// Tries multiple search strategies for maximum accuracy
-async function searchRealImage(queries) {
-  for (const query of queries) {
-    if (!query || query.length < 3) continue;
-    
-    try {
-      console.log('Searching Wikimedia for:', query);
-      
-      // Strategy 1: Direct image search in File namespace
-      const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=10&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
-      
-      if (searchData.query?.search?.length) {
-        // Get image info for ALL results at once (more efficient)
-        const titles = searchData.query.search.map(r => r.title).join('|');
-        const imageInfoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|thumburl|mime&iiurlwidth=800&format=json&origin=*`;
-        const infoRes = await fetch(imageInfoUrl);
-        const infoData = await infoRes.json();
-        
-        if (infoData.query?.pages) {
-          for (const page of Object.values(infoData.query.pages)) {
-            // Only accept actual image files (not SVG diagrams)
-            const mime = page.imageinfo?.[0]?.mime || '';
-            const url = page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url;
-            
-            if (url && (mime.startsWith('image/jpeg') || mime.startsWith('image/png') || mime === '')) {
-              // Skip very small images (likely icons or diagrams)
-              const width = page.imageinfo?.[0]?.width || 800;
-              if (width >= 300) {
-                console.log('Found REAL image:', url);
-                return {
-                  url: url,
-                  source: 'real',
-                  title: page.title
-                };
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.log('Search failed for query "' + query + '":', e.message);
-    }
+// Expand simple part names to accurate technical descriptions
+async function expandPartName(partName) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are an automotive parts expert. Given a simple part name in any language, respond with ONLY the exact English technical automotive term for that specific part. Be precise. No extra words, no sentences, just the part name.' },
+        { role: 'user', content: `What is the exact automotive part called: "${partName}"? Respond with only the English technical part name.` }
+      ],
+      max_tokens: 30,
+      temperature: 0
+    });
+    const expanded = completion.choices[0].message.content.trim();
+    console.log('Expanded part name:', partName, '->', expanded);
+    return expanded;
+  } catch (e) {
+    console.log('Part name expansion failed, using original:', e.message);
+    return partName;
   }
-  return null;
 }
 
 app.post('/image', async (req, res) => {
   console.log('=== /image endpoint hit ===');
   console.log('Received /image request:', req.body);
   try {
-    const { prompt, carMake, carModel, carYear, partName } = req.body;
-    console.log('Original prompt:', prompt);
-
-    const correctedPrompt = correctSpelling(prompt);
-    console.log('Corrected prompt:', correctedPrompt);
-
-    // STEP 1: Try to find a REAL image from Wikimedia Commons (FREE!)
-    const searchTerms = [
-      `${carMake || ''} ${carModel || ''} ${partName || ''}`.trim(),
-      `${partName || ''} car ${carMake || ''}`.trim(),
-      `${partName || ''} automotive`.trim(),
-      `${carMake || ''} ${partName || ''}`.trim(),
-      partName || '',
-      correctedPrompt
-    ].filter(t => t && t.length >= 3); // Remove empty/short terms
-    
-    console.log('Searching with terms:', searchTerms);
-    const realImage = await searchRealImage(searchTerms);
-
-    if (realImage) {
-      return res.json({ 
-        imageUrl: realImage.url, 
-        source: 'real',
-        title: realImage.title
-      });
+    const { partName } = req.body;
+    if (!partName || partName.trim().length < 2) {
+      return res.status(400).json({ error: 'يرجى إدخال اسم القطعة' });
     }
 
-    // STEP 2: Fallback to DALL-E 3 (much better than DALL-E 2!)
-    console.log('No real image found, using DALL-E 3...');
+    // STEP 1: Expand simple names to technical terms for accuracy
+    const technicalPartName = await expandPartName(partName.trim());
     
-    const styledPrompt = `A precise black and white technical line drawing illustration of ${correctedPrompt}, completely isolated on a pure white background. The drawing shows ONLY the exact specific part with accurate proportions, mounting points, threads, and mechanical details. Clean vector-style line art with fine cross-hatching and stippling shading for depth. No color, no gradients, no background elements, no text, no labels, no watermarks, no random extra parts. Identical style to a factory service manual technical schematic.`;
+    // STEP 2: Generate precise technical drawing with DALL-E 3
+    console.log('Generating technical drawing for:', technicalPartName);
+    
+    const styledPrompt = `A clean, precise black and white technical illustration of an automotive ${technicalPartName}, completely isolated on a pure white background. The drawing shows ONLY this single specific car part with all its identifying mechanical details: mounting points, threads, connectors, seals, grooves, and structural features accurately depicted. Clean engineering line art with fine hatching and cross-hatching for depth and dimension. No color, no gradients, no shadows, no background elements, no text, no labels, no watermarks, no random extra parts, no hands, no tools, no people. Professional factory OEM parts catalog technical schematic style. The part is centered, shown from a clear three-quarter or side view that best reveals its complete form and all functional details.`;
     
     const response = await openai.images.generate({
       model: "dall-e-3",
@@ -146,7 +98,8 @@ app.post('/image', async (req, res) => {
     console.log('DALL-E 3 image generated successfully');
     res.json({ 
       imageUrl: response.data[0].url,
-      source: 'ai'
+      source: 'ai',
+      partName: technicalPartName
     });
   } catch (error) {
     console.error('Image generation error:', error.message);
