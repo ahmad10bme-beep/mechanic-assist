@@ -28,7 +28,7 @@ app.post('/chat', async (req, res) => {
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "أنت خبير ميكانيكا سيارات خبير ومساعد للمبتكر أحمد الزهراني." },
+        { role: "system", content: "أنت خبير تقني متخصص في 4 مجالات: 1) ميكانيكا السيارات، 2) الكهرباء والإلكترونيات، 3) التبريد والتكييف، 4) الحاسب والبرمجة. أجب باختصار ودقة دائماً. لا تخرج عن هذه المجالات الأربعة. مساعد للمبتكر أحمد الزهراني." },
         { role: "user", content: message }
       ],
     });

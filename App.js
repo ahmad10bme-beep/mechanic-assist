@@ -62,6 +62,10 @@ export default function App() {
     sunset: { colors: ['#2a1a1a', '#4a2a3a', '#8b4a5c'], emojis: ['🌅', '💖', '🦊', '🧡', '💛', '🌸'], emojiColors: ['#FF6347', '#FFD700', '#FF8C00', '#FFA07A', '#FFEC8B', '#FFB6C1'] },
     space: { colors: ['#000000', '#1a0a2e', '#2d1b4e'], emojis: ['🚀', '🌟', '👽', '🛸', '🔭', '🪐', '✨'], emojiColors: ['#FFD700', '#00BFFF', '#32CD32', '#FF69B4', '#C0C0C0', '#FFA500', '#FFF'] },
     charcoal: { colors: ['#1a1a2e', '#2d2d44', '#3d3d5c'], emojis: ['🔧', '⚙️', '🔩', '🛠️', '⚡', '💡'], emojiColors: ['#C0C0C0', '#A9A9A9', '#D3D3D3', '#696969', '#FFD700', '#FFF'] },
+    volcanic: { colors: ['#1a0505', '#4a0a0a', '#8b1a1a'], emojis: ['🌋', '🔥', '🌡️', '☄️', '💥', '🧨'], emojiColors: ['#FF4500', '#FF6347', '#FFD700', '#FF8C00', '#DC143C', '#B22222'] },
+    moon: { colors: ['#0a0a0a', '#1a1a1a', '#2d2d2d'], emojis: ['🌑', '🌒', '🌓', '🌔', '🌕', '✨'], emojiColors: ['#C0C0C0', '#D3D3D3', '#E8E8E8', '#F5F5F5', '#FFFFFF', '#A9A9A9'] },
+    golden: { colors: ['#2a1a00', '#4a2a0a', '#8b6914'], emojis: ['✨', '💫', '🌟', '💰', '🏆', '👑'], emojiColors: ['#FFD700', '#FFA500', '#FFEC8B', '#DAA520', '#B8860B', '#F0E68C'] },
+    cyberpunk: { colors: ['#0a001a', '#1a0033', '#2d0066'], emojis: ['💻', '🤖', '⚡', '🔮', '🌈', '🎮'], emojiColors: ['#00FFFF', '#FF00FF', '#00FF00', '#FFD700', '#FF1493', '#00CED1'] },
   };
 
   useEffect(() => {
@@ -416,6 +420,10 @@ export default function App() {
                 { key: 'sunset', name: '🌅 غروب', colors: ['#2a1a1a', '#4a2a3a', '#8b4a5c'] },
                 { key: 'space', name: '🚀 فضائي', colors: ['#000000', '#1a0a2e', '#2d1b4e'] },
                 { key: 'charcoal', name: '🎱 فحمي', colors: ['#1a1a2e', '#2d2d44', '#3d3d5c'] },
+                { key: 'volcanic', name: '🌋 بركاني', colors: ['#1a0505', '#4a0a0a', '#8b1a1a'] },
+                { key: 'moon', name: '🌑 قمري', colors: ['#0a0a0a', '#1a1a1a', '#2d2d2d'] },
+                { key: 'golden', name: '✨ ذهبي', colors: ['#2a1a00', '#4a2a0a', '#8b6914'] },
+                { key: 'cyberpunk', name: '🌈 سايبر', colors: ['#0a001a', '#1a0033', '#2d0066'] },
               ].map(theme => (
                 <TouchableOpacity
                   key={theme.key}
